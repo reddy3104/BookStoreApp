@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import { authActions } from "../store/auth";
+import API_URL from "../config";  // <-- Import API_URL
 
 const Login = () => {
   const [Data, setData] = useState({ username: "", password: "" });
@@ -10,10 +11,9 @@ const Login = () => {
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
   const dispatch = useDispatch();
 
-  // Redirect if already logged in
   useEffect(() => {
     if (isLoggedIn) {
-      history("/"); // Redirect to home if logged in
+      history("/");
     }
   }, [isLoggedIn, history]);
 
@@ -29,19 +29,19 @@ const Login = () => {
         alert("All fields are required");
       } else {
         const response = await axios.post(
-          "http://localhost:1000/api/v1/login",
+          `${API_URL}/login`,  // <-- Use API_URL here
           Data
         );
         setData({ username: "", password: "" });
-        dispatch(authActions.login()); // Set user as logged in
-        history("/profile"); // Redirect to profile
-        dispatch(authActions.changeRole(response.data.role)); // Update user role
+        dispatch(authActions.login());
+        history("/profile");
+        dispatch(authActions.changeRole(response.data.role));
         localStorage.setItem("id", response.data._id);
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("role", response.data.role);
       }
     } catch (error) {
-      alert(error.response.data.message);
+      alert(error.response?.data?.message || "Login failed");
     }
   };
 

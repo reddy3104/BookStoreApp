@@ -1,12 +1,42 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { RxCross1 } from "react-icons/rx";
+import axios from "axios";
+import API_URL from "../../config"; // corrected import
 
-const SeeUserData = ({ userDivData, userDiv, setuserDiv }) => {
+const SeeUserData = ({ userId, userDiv, setuserDiv }) => {
+  const [userDivData, setUserDivData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const headers = {
+    id: localStorage.getItem("id"),
+    authorization: `Bearer ${localStorage.getItem("token")}`,
+  };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(`${API_URL}/user/${userId}`, { headers });
+        setUserDivData(res.data.data);
+      } catch (error) {
+        alert("Error fetching user data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId && userDiv !== "hidden") {
+      fetchUserData();
+    }
+  }, [userId, userDiv]);
+
+  if (loading) return <div className="text-center text-white p-4">Loading user data...</div>;
+  if (!userDivData) return null;
+
   return (
     <>
       <div
         className={`${userDiv} fixed top-0 left-0 h-screen w-full bg-zinc-800 opacity-80 transition-opacity duration-300`}
-        onClick={() => setuserDiv("hidden")} // Close on backdrop click
+        onClick={() => setuserDiv("hidden")}
       ></div>
       <div
         className={`${userDiv} fixed top-0 left-0 h-screen w-full flex items-center justify-center transition-opacity duration-300`}
@@ -23,20 +53,17 @@ const SeeUserData = ({ userDivData, userDiv, setuserDiv }) => {
           </div>
           <div className="mt-4">
             <label className="block text-sm text-zinc-600">
-              Username:{" "}
-              <span className="font-semibold text-zinc-800">{userDivData.username}</span>
+              Username: <span className="font-semibold text-zinc-800">{userDivData.username}</span>
             </label>
           </div>
           <div className="mt-4">
             <label className="block text-sm text-zinc-600">
-              Email:{" "}
-              <span className="font-semibold text-zinc-800">{userDivData.email}</span>
+              Email: <span className="font-semibold text-zinc-800">{userDivData.email}</span>
             </label>
           </div>
           <div className="mt-4">
             <label className="block text-sm text-zinc-600">
-              Address:{" "}
-              <span className="font-semibold text-zinc-800">{userDivData.address}</span>
+              Address: <span className="font-semibold text-zinc-800">{userDivData.address}</span>
             </label>
           </div>
         </div>

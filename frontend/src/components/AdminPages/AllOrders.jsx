@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { IoOpenOutline } from "react-icons/io5";
 import { FaCheck } from "react-icons/fa6";
 import SeeUserData from "./SeeUserData";
+import API_URL from "../../config"; // <-- import API_URL
 
 const AllOrders = () => {
   const [OrderHistory, setOrderHistory] = useState([]);
@@ -14,19 +15,19 @@ const AllOrders = () => {
   const [Options, setOptions] = useState("hidden");
   const [EditableDiv, setEditableDiv] = useState(-1);
   const [Values, setValues] = useState({ status: "" });
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true);
 
   const headers = {
     id: localStorage.getItem("id"),
-    authorization: `Bearer ${localStorage.getItem("token")}`, // Fixed string concatenation
+    authorization: `Bearer ${localStorage.getItem("token")}`,
   };
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axios.get("http://localhost:1000/api/v1/get-all-orders", { headers });
+        const res = await axios.get(`${API_URL}/get-all-orders`, { headers }); // use API_URL here
         setOrderHistory(res.data.data);
-        setLoading(false); // Stop loading once data is fetched
+        setLoading(false);
       } catch (error) {
         setLoading(false);
         alert("Error fetching order history");
@@ -42,11 +43,11 @@ const AllOrders = () => {
 
   const submitChanges = async (i) => {
     const id = OrderHistory[i]?._id;
-    if (!id) return; // Prevent error if the id is null or undefined
+    if (!id) return;
 
     try {
       const response = await axios.put(
-        `http://localhost:1000/api/v1/update-status/${id}`,
+        `${API_URL}/update-status/${id}`,  // use API_URL here
         Values,
         { headers }
       );
@@ -95,7 +96,7 @@ const AllOrders = () => {
             </div>
           </div>
           {OrderHistory.map((items, i) => {
-            if (!items || !items.book) return null; // Ensure items are valid
+            if (!items || !items.book) return null;
             return (
               <div
                 className="bg-zinc-800 w-full rounded py-2 px-4 flex gap-2 hover:bg-zinc-900 hover:cursor-pointer transition-all duration-300"

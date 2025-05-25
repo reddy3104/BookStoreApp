@@ -4,13 +4,15 @@ import { AiFillDelete } from "react-icons/ai";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Loader from "./Loader";
+import API_URL from "../config"; // Make sure path is correct
 
 const Cart = () => {
   const navigate = useNavigate();
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
-  const [Cart, setCart] = useState();
-  const [Total, setTotal] = useState(0);
+  const [cart, setCart] = useState(null);
+  const [total, setTotal] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const headers = {
     id: localStorage.getItem("id"),
@@ -21,45 +23,50 @@ const Cart = () => {
     if (isLoggedIn === false) {
       navigate("/");
     } else {
-      const fetch = async () => {
-        const res = await axios.get("http://localhost:1000/api/v1/get-user-cart", {
-          headers,
-        });
-        setCart(res.data.data);
+      const fetchCart = async () => {
+        try {
+          setLoading(true);
+          const res = await axios.get(`${API_URL}/get-user-cart`, { headers });
+          setCart(res.data.data);
+        } catch (error) {
+          console.error("Failed to fetch cart:", error);
+          setCart([]);
+        } finally {
+          setLoading(false);
+        }
       };
-      fetch();
+      fetchCart();
     }
-  }, []);
+  }, [isLoggedIn, navigate]);
 
   useEffect(() => {
-    if (Cart && Cart.length > 0) {
-      let total = 0;
-      Cart.forEach((item) => {
-        total += item.price;
-      });
-      setTotal(total);
+    if (cart && cart.length > 0) {
+      const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
+      setTotal(totalAmount);
+    } else {
+      setTotal(0);
     }
-  }, [Cart]);
+  }, [cart]);
 
-  const deletItem = async (id) => {
+  const deleteItem = async (id) => {
     try {
       const response = await axios.put(
-        `http://localhost:1000/api/v1/remove-from-cart/${id}`,
+        `${API_URL}/remove-from-cart/${id}`,
         {},
         { headers }
       );
       alert(response.data.message);
-      // Refresh cart
-      const res = await axios.get("http://localhost:1000/api/v1/get-user-cart", {
-        headers,
-      });
+
+      // Refresh cart after deletion
+      const res = await axios.get(`${API_URL}/get-user-cart`, { headers });
       setCart(res.data.data);
     } catch (error) {
-      console.log(error);
+      console.error("Failed to remove item:", error);
+      alert("Failed to remove item from cart.");
     }
   };
 
-  const PlaceOrder = async () => {
+  const placeOrder = async () => {
     if (!paymentMethod) {
       alert("Please select a payment method.");
       return;
@@ -67,19 +74,19 @@ const Cart = () => {
 
     if (paymentMethod === "Online Payment") {
       // Save cart and amount in localStorage before redirect
-      localStorage.setItem("cartData", JSON.stringify(Cart));
-      localStorage.setItem("cartTotal", Total);
+      localStorage.setItem("cartData", JSON.stringify(cart));
+      localStorage.setItem("cartTotal", total);
       navigate("/upi-payment");
     } else {
       // COD logic
       try {
         const orderData = {
-          order: Cart,
-          paymentMethod: paymentMethod,
+          order: cart,
+          paymentMethod,
         };
 
         const response = await axios.post(
-          `http://localhost:1000/api/v1/place-order`,
+          `${API_URL}/place-order`,
           orderData,
           { headers }
         );
@@ -87,61 +94,61 @@ const Cart = () => {
         alert(response.data.message);
         navigate("/profile/orderHistory");
       } catch (error) {
-        console.log(error);
+        console.error("Order placement failed:", error);
+        alert("Failed to place order. Please try again.");
       }
     }
   };
 
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
     <div className="h-auto bg-zinc-900 px-12 py-8">
-      {!Cart && <Loader />}
-      {Cart && Cart.length === 0 && (
+      {!cart || cart.length === 0 ? (
         <div className="h-screen flex items-center justify-center flex-col">
           <h1 className="text-5xl lg:text-6xl font-semibold text-zinc-400">
             Empty Cart
           </h1>
           <img src="/empty-cart.png" alt="empty cart" className="lg:h-[50vh]" />
         </div>
-      )}
-      {Cart && Cart.length > 0 && (
+      ) : (
         <>
-          <h1 className="text-5xl font-semibold text-zinc-500 mb-8">
-            Your Cart
-          </h1>
-          {Cart.map((items, i) => (
+          <h1 className="text-5xl font-semibold text-zinc-500 mb-8">Your Cart</h1>
+          {cart.map((item, i) => (
             <div
+              key={item._id}
               className="w-full my-6 rounded-lg bg-zinc-800 p-6 flex flex-col md:flex-row justify-between items-center shadow-lg hover:shadow-xl transition-all"
-              key={i}
             >
               <div className="flex items-center space-x-6">
                 <img
-                  src={items.url}
-                  alt={items.title}
+                  src={item.url}
+                  alt={item.title}
                   className="h-[15vh] md:h-[10vh] object-cover rounded-md shadow-md"
                 />
                 <div className="w-full">
                   <h1 className="text-2xl text-zinc-100 font-semibold text-start mt-2">
-                    {items.title}
+                    {item.title}
                   </h1>
                   <p className="text-normal text-zinc-300 mt-2 hidden lg:block">
-                    {items.desc.slice(0, 100)}...
+                    {item.desc.slice(0, 100)}...
                   </p>
                   <p className="text-normal text-zinc-300 mt-2 hidden md:block lg:hidden">
-                    {items.desc.slice(0, 65)}...
+                    {item.desc.slice(0, 65)}...
                   </p>
                   <p className="text-normal text-zinc-300 mt-2 block md:hidden">
-                    {items.desc.slice(0, 100)}...
+                    {item.desc.slice(0, 100)}...
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between mt-4 w-full md:w-auto space-x-4">
-                <h2 className="text-zinc-100 text-3xl font-semibold">
-                  ₹ {items.price}
-                </h2>
+                <h2 className="text-zinc-100 text-3xl font-semibold">₹ {item.price}</h2>
                 <button
                   className="bg-red-500 text-white hover:bg-red-600 rounded-full p-3 flex items-center justify-center transition-all"
-                  onClick={() => deletItem(items._id)}
+                  onClick={() => deleteItem(item._id)}
+                  aria-label={`Remove ${item.title} from cart`}
                 >
                   <AiFillDelete className="text-xl" />
                 </button>
@@ -151,11 +158,10 @@ const Cart = () => {
 
           <div className="mt-6 w-full flex items-center justify-end">
             <div className="p-6 bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-all hover:scale-105 ease-in-out duration-300">
-              <h1 className="text-3xl text-white font-semibold mb-4">
-                Total Amount
-              </h1>
+              <h1 className="text-3xl text-white font-semibold mb-4">Total Amount</h1>
               <div className="mt-3 flex items-center justify-between text-xl text-white">
-                <h2>{Cart.length} books</h2> <h2>₹ {Total}</h2>
+                <h2>{cart.length} books</h2>
+                <h2>₹ {total}</h2>
               </div>
 
               <div className="mt-4">
@@ -195,7 +201,7 @@ const Cart = () => {
               <div className="w-full mt-6">
                 <button
                   className="bg-green-500 text-white rounded-full px-8 py-4 text-xl font-semibold w-full hover:bg-green-600 transition-all ease-in-out duration-300"
-                  onClick={PlaceOrder}
+                  onClick={placeOrder}
                 >
                   Place your order
                 </button>

@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { MdEditSquare, MdDeleteSweep } from "react-icons/md";
 import Loader from "./Loader";
+import API_URL from "../config";  // <-- Import API_URL
 
 const ViewBookDetails = () => {
   const { id } = useParams();
@@ -16,13 +17,11 @@ const ViewBookDetails = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetch = async () => {
-      const res = await axios.get(
-        `http://localhost:1000/api/v1/get-book-by-id/${id}`
-      );
+      const res = await axios.get(`${API_URL}/get-book-by-id/${id}`);  // <-- Use API_URL here
       setBook(res.data.data);
     };
     fetch();
-  }, []);
+  }, [id]);
 
   const headers = {
     bookid: id,
@@ -32,11 +31,7 @@ const ViewBookDetails = () => {
 
   const addToFavourite = async () => {
     try {
-      const response = await axios.put(
-        "http://localhost:1000/api/v1/add-to-favourite",
-        {},
-        { headers }
-      );
+      const response = await axios.put(`${API_URL}/add-to-favourite`, {}, { headers }); // <-- API_URL here
       alert(response.data.message);
     } catch (error) {
       console.log(error);
@@ -45,11 +40,7 @@ const ViewBookDetails = () => {
 
   const addToCart = async () => {
     try {
-      const response = await axios.put(
-        "http://localhost:1000/api/v1/add-to-cart",
-        {},
-        { headers }
-      );
+      const response = await axios.put(`${API_URL}/add-to-cart`, {}, { headers });  // <-- API_URL here
       alert(response.data.message);
     } catch (error) {
       console.log(error);
@@ -58,10 +49,7 @@ const ViewBookDetails = () => {
 
   const deleteBook = async () => {
     try {
-      const response = await axios.delete(
-        "http://localhost:1000/api/v1/delete-book",
-        { headers }
-      );
+      const response = await axios.delete(`${API_URL}/delete-book`, { headers });  // <-- API_URL here
       alert(response.data.message);
       history("/all-books");
     } catch (error) {
@@ -122,9 +110,7 @@ const ViewBookDetails = () => {
             </div>
           </div>
           <div className="w-full lg:w-3/6 my-8">
-            <h1 className="text-4xl text-zinc-300 font-semibold">
-              {Book.title}
-            </h1>
+            <h1 className="text-4xl text-zinc-300 font-semibold">{Book.title}</h1>
             <p className="text-zinc-400 mt-1">by {Book.author}</p>
             <p className="text-zinc-500 mt-4 text-xl">{Book.desc}</p>
             <p className="flex mt-4 items-center justify-start text-zinc-400">

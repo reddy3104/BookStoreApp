@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import BookCard from "../components/Books/BookCard";
 import axios from "axios";
 import Loader from "./Loader";
+import API_URL from "../config"; // Adjust the path if needed
 
 const AllBooks = () => {
   const [books, setBooks] = useState([]);
@@ -12,7 +13,7 @@ const AllBooks = () => {
     window.scrollTo(0, 0);
     const fetchBooks = async () => {
       try {
-        const res = await axios.get("http://localhost:1000/api/v1/get-all-books");
+        const res = await axios.get(`${API_URL}/get-all-books`);
         const data = res.data?.data || [];
         setBooks(data);
         setFilteredBooks(data);
@@ -23,20 +24,19 @@ const AllBooks = () => {
     fetchBooks();
   }, []);
 
- useEffect(() => {
-  const sorted = [...books];
-  if (sortOption === "az") {
-    sorted.sort((a, b) =>
-      a.title?.trim().toLowerCase().localeCompare(b.title?.trim().toLowerCase())
-    );
-  } else if (sortOption === "low") {
-    sorted.sort((a, b) => a.price - b.price);
-  } else if (sortOption === "high") {
-    sorted.sort((a, b) => b.price - a.price);
-  }
-  setFilteredBooks(sorted);
-}, [sortOption, books]);
-
+  useEffect(() => {
+    const sorted = [...books];
+    if (sortOption === "az") {
+      sorted.sort((a, b) =>
+        a.title?.trim().toLowerCase().localeCompare(b.title?.trim().toLowerCase())
+      );
+    } else if (sortOption === "low") {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (sortOption === "high") {
+      sorted.sort((a, b) => b.price - a.price);
+    }
+    setFilteredBooks(sorted);
+  }, [sortOption, books]);
 
   return (
     <>

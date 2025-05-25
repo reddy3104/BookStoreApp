@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
+import API_URL from "../../config";  // Adjust path as per your project structure
 
 const UpdateBooks = () => {
   const { id } = useParams();
@@ -17,9 +18,7 @@ const UpdateBooks = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetch = async () => {
-      const res = await axios.get(
-        `http://localhost:1000/api/v1/get-book-by-id/${id}`
-      );
+      const res = await axios.get(`${API_URL}/get-book-by-id/${id}`);
 
       setData({
         url: res.data.data.url,
@@ -31,7 +30,7 @@ const UpdateBooks = () => {
       });
     };
     fetch();
-  }, []);
+  }, [id]);
 
   const headers = {
     bookid: id,
@@ -56,16 +55,12 @@ const UpdateBooks = () => {
       ) {
         alert("All fields are required");
       } else {
-        const response = await axios.put(
-          "http://localhost:1000/api/v1/update-book",
-          Data,
-          { headers }
-        );
+        const response = await axios.put(`${API_URL}/update-book`, Data, { headers });
         alert(response.data.message);
         history(`/view-book-details/${id}`);
       }
     } catch (error) {
-      alert(error.response.data.message);
+      alert(error.response?.data?.message || "Something went wrong");
     }
   };
 

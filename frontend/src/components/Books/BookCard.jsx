@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../../config'; // Adjust the path as needed
 
 const fallbackImage = "https://via.placeholder.com/240x360?text=No+Image";
 
@@ -14,7 +15,7 @@ const BookCard = ({ image, title, author, price, bookid, fav }) => {
   const removeFromFavourite = async () => {
     try {
       const response = await axios.put(
-        "http://localhost:1000/api/v1/remove-from-favourite",
+        `${API_URL}/remove-from-favourite`,
         {},
         { headers }
       );

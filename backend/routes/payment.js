@@ -2,9 +2,16 @@ const express = require("express");
 const axios = require("axios");
 const router = express.Router();
 
+// POST /api/payment/create-order
 router.post("/create-order", async (req, res) => {
   const { orderId, orderAmount, customerDetails } = req.body;
 
+  // Input validation
+  if (!orderId || !orderAmount || !customerDetails || !customerDetails.id || !customerDetails.name || !customerDetails.email || !customerDetails.phone) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Environment variables
   const CASHFREE_STAGE = process.env.CASHFREE_STAGE === "true";
   const CASHFREE_API_ID = process.env.CASHFREE_API_ID;
   const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
@@ -15,7 +22,7 @@ router.post("/create-order", async (req, res) => {
 
   const data = {
     order_id: orderId,
-    order_amount: orderAmount.toString(),
+    order_amount: parseFloat(orderAmount).toFixed(2),
     order_currency: "INR",
     customer_details: {
       customer_id: customerDetails.id,
@@ -24,7 +31,7 @@ router.post("/create-order", async (req, res) => {
       customer_phone: customerDetails.phone,
     },
     order_meta: {
-      return_url: "https://yourfrontend.com/payment-response", // Update when deployed
+      return_url: "https://bookstoreproject-frontend.onrender.com/payment-response?order_id={order_id}", // Update this with your actual frontend URL
     },
   };
 
@@ -37,11 +44,19 @@ router.post("/create-order", async (req, res) => {
 
   try {
     const response = await axios.post(url, data, { headers });
-    return res.json({
-      paymentLink: response.data.payment_session_id
-        ? `https://www.cashfree.com/pg/checkout/post/submit?session_id=${response.data.payment_session_id}`
-        : null,
-    });
+
+    const sessionId = response.data.payment_session_id;
+
+    if (!sessionId) {
+      return res.status(500).json({
+        error: "Failed to create payment session",
+        details: response.data,
+      });
+    }
+
+    const paymentLink = `https://www.cashfree.com/pg/checkout/post/submit?session_id=${sessionId}`;
+
+    return res.json({ paymentLink });
   } catch (error) {
     console.error("Cashfree error:", error.response?.data || error.message);
     return res.status(500).json({

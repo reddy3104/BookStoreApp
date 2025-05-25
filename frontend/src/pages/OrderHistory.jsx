@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import Loader from "./Loader";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import API_URL from "../config";  // Import your API URL from config
 
 const OrderHistory = () => {
   const [OrderHistory, setOrderHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // For error handling
+  const [error, setError] = useState(null);
 
   const headers = {
     id: localStorage.getItem("id"),
@@ -16,27 +17,21 @@ const OrderHistory = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:1000/api/v1/get-order-history",
-          { headers }
-        );
-        setOrderHistory(res.data.data || []); // Ensure it's not null
+        const res = await axios.get(`${API_URL}/get-order-history`, { headers });
+        setOrderHistory(res.data.data || []);
       } catch (err) {
         setError("Failed to load order history.");
       } finally {
-        setLoading(false); // Turn off loading state
+        setLoading(false);
       }
     };
     fetch();
   }, []);
 
-  if (loading) {
-    return <Loader />;
-  }
+  if (loading) return <Loader />;
 
-  if (error) {
+  if (error)
     return <div className="text-center text-red-500">{error}</div>;
-  }
 
   return (
     <>

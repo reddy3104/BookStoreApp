@@ -5,12 +5,14 @@ import { useSelector } from "react-redux";
 import Sidebar from "../components/Profile/Sidebar";
 import Loader from "./Loader";
 import MobileBar from "../components/Profile/MobileBar";
+import API_URL from "../config";  // Import the centralized API URL
 
 const Profile = () => {
   const [ProfileData, setProfileData] = useState();
-  const [loading, setLoading] = useState(true); // State to manage the loading state
+  const [loading, setLoading] = useState(true); 
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
   const history = useNavigate();
+
   const headers = {
     id: localStorage.getItem("id"),
     authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -23,39 +25,35 @@ const Profile = () => {
       const fetchData = async () => {
         try {
           const response = await axios.get(
-            "http://localhost:1000/api/v1/getUserData",
+            `${API_URL}/getUserData`,   // Use the config API URL here
             { headers }
           );
           setProfileData(response.data);
         } catch (error) {
           console.error("Error fetching profile data", error);
-          // Optionally, handle the error or show a message to the user
         } finally {
-          setLoading(false); // Stop the loader once data is fetched or error occurs
+          setLoading(false);
         }
       };
 
       fetchData();
     }
-  }, [isLoggedIn, history, headers]);
+  }, [isLoggedIn, history]);
 
   if (loading) {
-    return <Loader />; // Show loader while fetching data
+    return <Loader />;
   }
 
   return (
     <div className="h-auto bg-zinc-900 px-2 md:px-8 py-8 flex flex-col lg:flex-row gap-4">
       {ProfileData && (
         <>
-          {/* Sidebar for larger screens */}
           <div className="h-auto lg:h-[80vh] w-full lg:w-1/6 bg-zinc-800 rounded-lg">
             <Sidebar ProfileData={ProfileData} />
           </div>
 
-          {/* Mobile Bar */}
           <MobileBar />
 
-          {/* Main Profile Content */}
           <div className="h-[100%] w-full lg:w-5/6 rounded-lg">
             <Outlet />
           </div>

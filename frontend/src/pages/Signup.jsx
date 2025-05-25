@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import API_URL from "../config";  // <-- Import API_URL
 
 const Signup = () => {
   const history = useNavigate();
@@ -31,7 +32,7 @@ const Signup = () => {
         alert("All fields are required");
       } else {
         const response = await axios.post(
-          "http://localhost:1000/api/v1/sign-up",
+          `${API_URL}/sign-up`,  // <-- Use API_URL here
           Data
         );
         setData({ username: "", email: "", password: "", address: "" });
