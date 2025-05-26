@@ -11,7 +11,6 @@ const Cart = () => {
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
   const [cart, setCart] = useState(null);
   const [total, setTotal] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState("");
   const [loading, setLoading] = useState(true);
   const [placeOrderLoading, setPlaceOrderLoading] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState(null);
@@ -63,7 +62,6 @@ const Cart = () => {
       );
       alert(response.data.message);
 
-      // Refresh cart after deletion
       const res = await axios.get(`${API_URL}/get-user-cart`, { headers });
       setCart(res.data.data);
     } catch (error) {
@@ -75,51 +73,33 @@ const Cart = () => {
   };
 
   const placeOrder = async () => {
-    if (!paymentMethod) {
-      alert("Please select a payment method.");
-      return;
-    }
-
     if (cart.length === 0) {
       alert("Your cart is empty.");
       return;
     }
 
     setPlaceOrderLoading(true);
-    if (paymentMethod === "Online Payment") {
-      // Save cart and amount in localStorage before redirect
-      localStorage.setItem("cartData", JSON.stringify(cart));
-      localStorage.setItem("cartTotal", total.toString()); // save total as string
-      navigate("/upi-payment");
+    try {
+      const orderData = {
+        order: cart,
+        paymentMethod: "UPI",
+      };
+
+      const response = await axios.post(`${API_URL}/place-order`, orderData, {
+        headers,
+      });
+
+      alert(response.data.message);
+      navigate("/profile/orderHistory");
+    } catch (error) {
+      console.error("Order placement failed:", error);
+      alert("Failed to place order. Please try again.");
+    } finally {
       setPlaceOrderLoading(false);
-    } else {
-      // COD logic
-      try {
-        const orderData = {
-          order: cart,
-          paymentMethod,
-        };
-
-        const response = await axios.post(
-          `${API_URL}/place-order`,
-          orderData,
-          { headers }
-        );
-
-        alert(response.data.message);
-        navigate("/profile/orderHistory");
-      } catch (error) {
-        console.error("Order placement failed:", error);
-        alert("Failed to place order. Please try again.");
-      } finally {
-        setPlaceOrderLoading(false);
-      }
     }
   };
 
-  if (loading) {
-    return <Loader />;
-  }
+  if (loading) return <Loader />;
 
   return (
     <div className="h-auto bg-zinc-900 px-12 py-8">
@@ -180,40 +160,6 @@ const Cart = () => {
               <div className="mt-3 flex items-center justify-between text-xl text-white">
                 <h2>{cart.length} books</h2>
                 <h2>₹ {total}</h2>
-              </div>
-
-              <div className="mt-4">
-                <h3 className="text-2xl text-white mb-2">Select Payment Method</h3>
-                <div className="flex space-x-4">
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="cod"
-                      name="paymentMethod"
-                      value="COD"
-                      checked={paymentMethod === "COD"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="form-radio h-5 w-5 text-green-500 transition duration-200 ease-in-out"
-                    />
-                    <label htmlFor="cod" className="ml-2 text-white">
-                      Cash on Delivery
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id="onlinePayment"
-                      name="paymentMethod"
-                      value="Online Payment"
-                      checked={paymentMethod === "Online Payment"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="form-radio h-5 w-5 text-green-500 transition duration-200 ease-in-out"
-                    />
-                    <label htmlFor="onlinePayment" className="ml-2 text-white">
-                      Online Payment
-                    </label>
-                  </div>
-                </div>
               </div>
 
               <div className="w-full mt-6">

@@ -3,7 +3,6 @@ const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
-
 const user = require("./routes/user");
 const book = require("./routes/book");
 const cart = require("./routes/cart");
@@ -12,7 +11,7 @@ const order = require("./routes/order");
 
 
 dotenv.config();
-require("./conn/conn"); // DB connection
+require("./conn/conn"); 
 
 app.use(cors());
 app.use(express.json());
