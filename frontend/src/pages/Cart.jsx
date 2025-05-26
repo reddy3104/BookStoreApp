@@ -4,7 +4,7 @@ import { AiFillDelete } from "react-icons/ai";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Loader from "./Loader";
-import API_URL from "../config"; // Make sure path is correct
+import API_URL from "../config";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -13,6 +13,8 @@ const Cart = () => {
   const [total, setTotal] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [loading, setLoading] = useState(true);
+  const [placeOrderLoading, setPlaceOrderLoading] = useState(false);
+  const [deletingItemId, setDeletingItemId] = useState(null);
 
   const headers = {
     id: localStorage.getItem("id"),
@@ -41,7 +43,10 @@ const Cart = () => {
 
   useEffect(() => {
     if (cart && cart.length > 0) {
-      const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
+      const totalAmount = cart.reduce(
+        (sum, item) => sum + Number(item.price || 0),
+        0
+      );
       setTotal(totalAmount);
     } else {
       setTotal(0);
@@ -50,6 +55,7 @@ const Cart = () => {
 
   const deleteItem = async (id) => {
     try {
+      setDeletingItemId(id);
       const response = await axios.put(
         `${API_URL}/remove-from-cart/${id}`,
         {},
@@ -63,6 +69,8 @@ const Cart = () => {
     } catch (error) {
       console.error("Failed to remove item:", error);
       alert("Failed to remove item from cart.");
+    } finally {
+      setDeletingItemId(null);
     }
   };
 
@@ -72,11 +80,18 @@ const Cart = () => {
       return;
     }
 
+    if (cart.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+
+    setPlaceOrderLoading(true);
     if (paymentMethod === "Online Payment") {
       // Save cart and amount in localStorage before redirect
       localStorage.setItem("cartData", JSON.stringify(cart));
-      localStorage.setItem("cartTotal", total);
+      localStorage.setItem("cartTotal", total.toString()); // save total as string
       navigate("/upi-payment");
+      setPlaceOrderLoading(false);
     } else {
       // COD logic
       try {
@@ -96,6 +111,8 @@ const Cart = () => {
       } catch (error) {
         console.error("Order placement failed:", error);
         alert("Failed to place order. Please try again.");
+      } finally {
+        setPlaceOrderLoading(false);
       }
     }
   };
@@ -116,7 +133,7 @@ const Cart = () => {
       ) : (
         <>
           <h1 className="text-5xl font-semibold text-zinc-500 mb-8">Your Cart</h1>
-          {cart.map((item, i) => (
+          {cart.map((item) => (
             <div
               key={item._id}
               className="w-full my-6 rounded-lg bg-zinc-800 p-6 flex flex-col md:flex-row justify-between items-center shadow-lg hover:shadow-xl transition-all"
@@ -146,7 +163,8 @@ const Cart = () => {
               <div className="flex items-center justify-between mt-4 w-full md:w-auto space-x-4">
                 <h2 className="text-zinc-100 text-3xl font-semibold">₹ {item.price}</h2>
                 <button
-                  className="bg-red-500 text-white hover:bg-red-600 rounded-full p-3 flex items-center justify-center transition-all"
+                  disabled={deletingItemId === item._id}
+                  className="bg-red-500 text-white hover:bg-red-600 rounded-full p-3 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => deleteItem(item._id)}
                   aria-label={`Remove ${item.title} from cart`}
                 >
@@ -200,10 +218,11 @@ const Cart = () => {
 
               <div className="w-full mt-6">
                 <button
-                  className="bg-green-500 text-white rounded-full px-8 py-4 text-xl font-semibold w-full hover:bg-green-600 transition-all ease-in-out duration-300"
+                  disabled={placeOrderLoading}
+                  className="bg-green-500 text-white rounded-full px-8 py-4 text-xl font-semibold w-full hover:bg-green-600 transition-all ease-in-out duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={placeOrder}
                 >
-                  Place your order
+                  {placeOrderLoading ? "Processing..." : "Place your order"}
                 </button>
               </div>
             </div>

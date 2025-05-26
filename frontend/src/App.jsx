@@ -20,7 +20,8 @@ import UpdateBooks from "./components/AdminPages/UpdateBooks";
 import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
 import ScrollToTop from "./components/ScrollToTop";
-import UPIPayment from "./pages/UPIPayment";
+import PaymentPage from "./pages/PaymentPage";
+import UpiPayment from "./components/UPIPayment";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -50,7 +51,8 @@ const App = () => {
         <Route path="/cart" element={<Cart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/upi-payment" element={<UPIPayment />} />
+        <Route path="/upi-payment" element={<UpiPayment />} />
+        <Route path="/pay" element={<PaymentPage/>} />
 
         {/* Nested Profile Routes */}
         <Route path="/profile" element={<Profile />}>

@@ -9,7 +9,7 @@ const book = require("./routes/book");
 const cart = require("./routes/cart");
 const fav = require("./routes/favourite");
 const order = require("./routes/order");
-const paymentRoutes = require("./routes/payment");
+
 
 dotenv.config();
 require("./conn/conn"); // DB connection
@@ -23,7 +23,6 @@ app.use("/api/v1", book);
 app.use("/api/v1", cart);
 app.use("/api/v1", fav);
 app.use("/api/v1", order);
-app.use("/api/v1", paymentRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server is running...");
