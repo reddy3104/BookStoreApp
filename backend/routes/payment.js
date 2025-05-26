@@ -1,69 +1,72 @@
-const express = require("express");
-const axios = require("axios");
-const router = express.Router();
+const express = require('express');
+const cors = require('cors');
+const crypto = require('crypto');
+const { Cashfree } = require('cashfree-pg');
+require('dotenv').config();
 
-// POST /api/payment/create-order
-router.post("/create-order", async (req, res) => {
-  const { orderId, orderAmount, customerDetails } = req.body;
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-  // Input validation
-  if (!orderId || !orderAmount || !customerDetails || !customerDetails.id || !customerDetails.name || !customerDetails.email || !customerDetails.phone) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
+// Cashfree credentials and environment
+Cashfree.XClientId = process.env.CLIENT_ID;
+Cashfree.XClientSecret = process.env.CLIENT_SECRET;
+Cashfree.XEnvironment = Cashfree.Environment.SANDBOX; // Change to LIVE in production
 
-  // Environment variables
-  const CASHFREE_STAGE = process.env.CASHFREE_STAGE === "true";
-  const CASHFREE_API_ID = process.env.CASHFREE_API_ID;
-  const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
+// Generate unique 12-character orderId
+function generateOrderId() {
+  const uniqueId = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.createHash('sha256').update(uniqueId).digest('hex');
+  return hash.substr(0, 12);
+}
 
-  const CASHFREE_STAGE_URL = "https://sandbox.cashfree.com/pg/orders";
-  const CASHFREE_PROD_URL = "https://api.cashfree.com/pg/orders";
-  const url = CASHFREE_STAGE ? CASHFREE_STAGE_URL : CASHFREE_PROD_URL;
+// Root route
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
 
-  const data = {
-    order_id: orderId,
-    order_amount: parseFloat(orderAmount).toFixed(2),
-    order_currency: "INR",
-    customer_details: {
-      customer_id: customerDetails.id,
-      customer_name: customerDetails.name,
-      customer_email: customerDetails.email,
-      customer_phone: customerDetails.phone,
-    },
-    order_meta: {
-      return_url: "https://bookstoreproject-frontend.onrender.com/payment-response?order_id={order_id}", // Update this with your actual frontend URL
-    },
-  };
-
-  const headers = {
-    "Content-Type": "application/json",
-    "x-client-id": CASHFREE_API_ID,
-    "x-client-secret": CASHFREE_SECRET_KEY,
-    "x-api-version": "2022-09-01",
-  };
-
+// Create payment order
+app.get('/payment', async (req, res) => {
   try {
-    const response = await axios.post(url, data, { headers });
+    const orderId = generateOrderId();
+    const request = {
+      order_amount: 1.0,
+      order_currency: 'INR',
+      order_id: orderId,
+      customer_details: {
+        customer_id: 'webcodder01',
+        customer_phone: '9999999999',
+        customer_name: 'Web Codder',
+        customer_email: 'webcodder@example.com',
+      },
+    };
 
-    const sessionId = response.data.payment_session_id;
-
-    if (!sessionId) {
-      return res.status(500).json({
-        error: "Failed to create payment session",
-        details: response.data,
-      });
-    }
-
-    const paymentLink = `https://www.cashfree.com/pg/checkout/post/submit?session_id=${sessionId}`;
-
-    return res.json({ paymentLink });
+    const response = await Cashfree.PGCreateOrder('2023-08-01', request);
+    console.log(response.data);
+    res.json(response.data);
   } catch (error) {
-    console.error("Cashfree error:", error.response?.data || error.message);
-    return res.status(500).json({
-      error: "Failed to create payment order",
-      details: error.response?.data || error.message,
-    });
+    console.error(error?.response?.data?.message || error.message || error);
+    res.status(500).json({ error: 'Failed to create payment order' });
   }
 });
 
-module.exports = router;
+// Verify payment
+app.post('/verify', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    const response = await Cashfree.PGOrderFetchPayments('2023-08-01', orderId);
+    res.json(response.data);
+  } catch (error) {
+    console.error(error?.response?.data?.message || error.message || error);
+    res.status(500).json({ error: 'Failed to verify payment' });
+  }
+});
+
+// Use port from env or default to 1000
+const PORT = process.env.PORT || 1000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+module.exports = app; // Optional export

@@ -25,6 +25,10 @@ app.use("/api/v1", fav);
 app.use("/api/v1", order);
 app.use("/api/v1", paymentRoutes);
 
+app.get("/", (req, res) => {
+  res.send("Server is running...");
+});
+
 const PORT = process.env.PORT || 1000;
 app.listen(PORT, () => {
   console.log(`Server Started at PORT : ${PORT}`);

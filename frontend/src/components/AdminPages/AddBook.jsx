@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import API_URL from "../config";  // import the config
+import API_URL from "../../config";  // import the config
 
 const AddBook = () => {
   const [Data, setData] = useState({

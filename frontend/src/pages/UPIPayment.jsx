@@ -1,77 +1,88 @@
-import React, { useState } from "react";
-import API_URL from "../config"; // Ensure this points to your backend base URL
+// UPIPayment.jsx
+import { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import { load } from "@cashfreepayments/cashfree-js";
+import API_URL from "../config";
 
-const UPIPayment = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [paymentLink, setPaymentLink] = useState(null);
+function UPIPayment() {
+  const [orderId, setOrderId] = useState("");
+  const cashfreeRef = useRef(null);
 
-  // You can generate orderId on button click or here
-  const generateOrderId = () => "order_" + Date.now();
+  // Initialize Cashfree SDK once on component mount
+  useEffect(() => {
+    async function initializeSDK() {
+      try {
+        cashfreeRef.current = await load({ mode: "sandbox" }); // change to "live" in prod
+      } catch (error) {
+        console.error("Cashfree SDK initialization failed:", error);
+      }
+    }
 
-  const orderAmount = 100; // Can be dynamic or from props/user input
-  const customerDetails = {
-    id: "cust123",
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "9999999999",
+    initializeSDK();
+  }, []);
+
+  // Fetch payment session id and order id from backend
+  const getSessionId = async () => {
+    try {
+      const res = await axios.get(`${API_URL.replace("/api/v1", "")}/payment`);
+      if (res.data && res.data.payment_session_id) {
+        setOrderId(res.data.order_id);
+        return res.data.payment_session_id;
+      }
+      throw new Error("Invalid payment session response");
+    } catch (error) {
+      console.error("Error getting session ID:", error);
+      return null;
+    }
   };
 
-  const handlePayment = async () => {
-    setLoading(true);
-    setError(null);
-    setPaymentLink(null);
-
-    const orderId = generateOrderId();
-
+  // Verify payment by orderId
+  const verifyPayment = async (orderId) => {
     try {
-      const response = await fetch(`${API_URL}/create-order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ orderId, orderAmount, customerDetails }),
+      const res = await axios.post(`${API_URL.replace("/api/v1", "")}/verify`, {
+        orderId,
       });
-
-      if (!response.ok) throw new Error("Network error");
-
-      const data = await response.json();
-
-      if (data.paymentLink) {
-        setPaymentLink(data.paymentLink);
-      } else {
-        throw new Error("No payment link returned");
+      if (res?.data) {
+        alert("Payment verified successfully");
       }
-    } catch (err) {
-      setError(err.message || "Payment failed");
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Payment verification failed:", error);
+    }
+  };
+
+  // Handle the payment button click
+  const handleClick = async (e) => {
+    e.preventDefault();
+    if (!cashfreeRef.current) {
+      alert("Payment SDK not initialized yet. Please try again.");
+      return;
+    }
+    try {
+      const sessionId = await getSessionId();
+      if (!sessionId) return;
+
+      const checkoutOptions = {
+        paymentSessionId: sessionId,
+        redirectTarget: "_modal",
+      };
+
+      cashfreeRef.current.checkout(checkoutOptions).then(() => {
+        console.log("Payment initialized");
+        verifyPayment(orderId);
+      });
+    } catch (error) {
+      console.error("Payment initialization error:", error);
     }
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>UPI Payment</h2>
-
-      {loading && <p>Creating payment order...</p>}
-
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
-
-      {paymentLink ? (
-        <div>
-          <p>Payment link created:</p>
-          <a href={paymentLink} target="_blank" rel="noreferrer noopener" style={{ color: "blue", textDecoration: "underline" }}>
-            Pay Now
-          </a>
-          <p>
-            Or scan the QR code from your payment app and use the link above.
-          </p>
-        </div>
-      ) : (
-        !loading && <button onClick={handlePayment}>Pay via UPI</button>
-      )}
-    </div>
+    <>
+      <h1>Cashfree UPI Payment Gateway</h1>
+      <div className="card">
+        <button onClick={handleClick}>Pay now</button>
+      </div>
+    </>
   );
-};
+}
 
 export default UPIPayment;
